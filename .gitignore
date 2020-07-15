@@ -1,0 +1,13 @@
+.idea/
+.gradle/
+
+/build/
+
+/out/
+/output/
+/target/
+/reports/
+
+*.iml
+*.DS_Store
+*.bat

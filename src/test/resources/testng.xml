@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+
+<suite name="UserTestSuite">
+    <listeners>
+        <listener class-name="com.restAssured.testcases.TestListener"/>
+    </listeners>
+
+    <test name="UserTest">
+        <classes>
+            <class name="com.restAssured.testcases.UserServiceTest"/>
+        </classes>
+    </test>
+</suite>
