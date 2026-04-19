@@ -1,4 +1,4 @@
-Feature: To validate Employee Rest API
+Feature: Validate User REST API
 
   @regression
   Scenario Outline: As a user, I should validate the user with all operations like create, get, update, patch and delete.
@@ -24,4 +24,4 @@ Feature: To validate Employee Rest API
     Then I should validate the deleted user
     Examples:
       | first_name | last_name | gender | email               | status |
-      | Bright     | Lastname  | male   | xyz111abc@gmail.com | active |
+      | Bright     | Lastname  | male   | bright.user@example.com | active |

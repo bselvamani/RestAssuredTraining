@@ -7,7 +7,13 @@
 /output/
 /target/
 /reports/
+/.tools/
 
 *.iml
 *.DS_Store
 *.bat
+
+# Local environment secrets
+.env
+.env.local
+.env.examples

@@ -2,6 +2,7 @@ package com.restAssured.testcases;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import com.restAssured.service.UserService;
 import com.restAssured.model.User;
@@ -10,36 +11,42 @@ import org.testng.annotations.*;
 
 import io.restassured.response.Response;
 import org.testng.asserts.SoftAssert;
+import org.testng.SkipException;
 
 public class UserServiceTest {
     private User user, actualUser;
     private SoftAssert softAssert;
+    private final UserService userService = new UserService();
 
     @Test
-    public void test_get_all_user() {
-        Response response = new UserService().getAllUser();
+    public void testGetAllUser() {
+        Response response = userService.getAllUser();
         Assert.assertEquals(response.getStatusCode(), 200);
+        Assert.assertEquals(response.jsonPath().getInt("code"), 200);
 
-        List<Map<String, String>> hashMapList = response.jsonPath().getList("result");
+        List<Map<String, Object>> hashMapList = response.jsonPath().getList("data");
         Assert.assertTrue(hashMapList.size() >= 1);
     }
 
     @Test
-    public void test_get_all_user_on_page() {
-        Response response = new UserService().getAllUserOnPage("2");
+    public void testGetAllUserOnPage() {
+        Response response = userService.getAllUserOnPage("2");
         Assert.assertEquals(response.getStatusCode(), 200);
+        Assert.assertEquals(response.jsonPath().getInt("code"), 200);
 
-        List<Map<String, String>> hashMapList = response.jsonPath().getList("result");
+        List<Map<String, Object>> hashMapList = response.jsonPath().getList("data");
         Assert.assertTrue(hashMapList.size() >= 1);
     }
 
     @Test(groups = "user", dataProvider = "user-data")
-    public void test_create_user(String first_name, String last_name, String gender, String email, String status) {
-        Response response = new UserService().createUser(new User(first_name, last_name, gender, email, status).getJSON());
-        //Assert.assertEquals(response.getStatusCode(), 302);
+    public void testCreateUser(String first_name, String last_name, String gender, String email, String status) {
+        ensureAuthAvailable();
+        Response response = userService.createUser(new User(first_name, last_name, gender, email, status).getJSON());
+        Assert.assertEquals(response.getStatusCode(), 200);
+        Assert.assertTrue(isApiSuccess(response), "Expected API success code for create call");
 
-        Map<String, String> hashMap = response.jsonPath().getMap("result");
-        user = new User().get(hashMap);
+        Map<String, Object> hashMap = response.jsonPath().getMap("data");
+        user = new User().fromMap(hashMap);
 
         // Asserts
         softAssert = new SoftAssert();
@@ -52,37 +59,41 @@ public class UserServiceTest {
     }
 
     @Test(dependsOnGroups = "user")
-    public void test_get_user() {
-        Response response = new UserService().getUser(user.getId());
+    public void testGetUser() {
+        Response response = userService.getUser(user.getId());
         Assert.assertEquals(response.getStatusCode(), 200);
+        Assert.assertEquals(response.jsonPath().getInt("code"), 200);
 
-        Map<String, String> hashMap = response.jsonPath().getMap("result");
-        actualUser = new User().get(hashMap);
+        Map<String, Object> hashMap = response.jsonPath().getMap("data");
+        actualUser = new User().fromMap(hashMap);
 
         // Asserts
         Assert.assertEquals(actualUser.getFirstName(), user.getFirstName());
     }
 
     @Test(dependsOnGroups = "user")
-    public void test_get_all_user_by_name() {
-        Response response = new UserService().getAllUserWithName(user.getFirstName());
+    public void testGetAllUserByName() {
+        Response response = userService.getAllUserWithName(user.getFirstName());
         Assert.assertEquals(response.getStatusCode(), 200);
+        Assert.assertEquals(response.jsonPath().getInt("code"), 200);
 
-        List<Map<String, String>> hashMapList = response.jsonPath().getList("result");
+        List<Map<String, Object>> hashMapList = response.jsonPath().getList("data");
         Assert.assertTrue(hashMapList.size() >= 1);
     }
 
     @Test(dependsOnGroups = "user")
-    public void test_update_user() {
+    public void testUpdateUser() {
+        ensureAuthAvailable();
         // Update last name and gender
         user.setLastName("Updated");
         user.setGender("female");
 
-        Response response = new UserService().updateUser(user.getId(), user.getJSON());
+        Response response = userService.updateUser(user.getId(), user.getJSON());
         Assert.assertEquals(response.getStatusCode(), 200);
+        Assert.assertTrue(isApiSuccess(response), "Expected API success code for update call");
 
-        Map<String, String> hashMap = response.jsonPath().getMap("result");
-        actualUser = user.get(hashMap);
+        Map<String, Object> hashMap = response.jsonPath().getMap("data");
+        actualUser = new User().fromMap(hashMap);
 
         // Asserts
         softAssert = new SoftAssert();
@@ -92,16 +103,18 @@ public class UserServiceTest {
     }
 
     @Test(dependsOnGroups = "user")
-    public void test_update_user_patch() {
+    public void testUpdateUserPatch() {
+        ensureAuthAvailable();
         // Update last name and gender
         user.setLastName("Patched");
         user.setGender("male");
 
-        Response response = new UserService().updateUserPatch(user.getId(), user.getJSON());
+        Response response = userService.updateUserPatch(user.getId(), user.getJSON());
         Assert.assertEquals(response.getStatusCode(), 200);
+        Assert.assertTrue(isApiSuccess(response), "Expected API success code for patch call");
 
-        Map<String, String> hashMap = response.jsonPath().getMap("result");
-        actualUser = user.get(hashMap);
+        Map<String, Object> hashMap = response.jsonPath().getMap("data");
+        actualUser = new User().fromMap(hashMap);
 
         // Asserts
         softAssert = new SoftAssert();
@@ -111,18 +124,31 @@ public class UserServiceTest {
     }
 
     @AfterClass(alwaysRun = true)
-    public void test_delete_user() {
+    public void testDeleteUser() {
         if (user == null) return;
 
-        Response response = new UserService().deleteUser(user.getId());
+        ensureAuthAvailable();
+        Response response = userService.deleteUser(user.getId());
         Assert.assertEquals(response.getStatusCode(), 200);
-
-        Assert.assertTrue(response.jsonPath().getMap("result") == null);
+        Assert.assertTrue(isApiSuccess(response), "Expected API success code for delete call");
+        Assert.assertNull(response.jsonPath().get("data"));
     }
 
     @DataProvider(name = "user-data")
     public Object[][] createUserData() {
+        String uniqueEmail = "restassured." + UUID.randomUUID().toString().substring(0, 8) + "@example.com";
         return new Object[][]{
-                {"Bright", "Lastname", "male", "xyz111abc@gmail.com", "active"}};
+                {"Bright", "Lastname", "male", uniqueEmail, "active"}};
+    }
+
+    private boolean isApiSuccess(Response response) {
+        int code = response.jsonPath().getInt("code");
+        return code >= 200 && code < 300;
+    }
+
+    private void ensureAuthAvailable() {
+        if (!userService.isAuthConfigured()) {
+            throw new SkipException("Write API tests skipped: GoRest token is not configured.");
+        }
     }
 }

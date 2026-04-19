@@ -9,13 +9,12 @@ import org.testng.ITestResult;
 
 public class TestListener implements ITestListener {
 
-    ExtentTest test;
-    ThreadLocal<ExtentTest> extentTest = new ThreadLocal<ExtentTest>();
-    ExtentReports reports = TestReport.generateReport();
+    private final ThreadLocal<ExtentTest> extentTest = new ThreadLocal<>();
+    private final ExtentReports reports = TestReport.generateReport();
 
     @Override
     public void onTestStart(ITestResult result) {
-        test = reports.createTest(result.getMethod().getMethodName());
+        ExtentTest test = reports.createTest(result.getMethod().getMethodName());
         extentTest.set(test);
     }
 
@@ -31,20 +30,15 @@ public class TestListener implements ITestListener {
 
     @Override
     public void onTestSkipped(ITestResult result) {
-        // TODO Auto-generated method stub
-
+        extentTest.get().log(Status.SKIP, "SKIPPED");
     }
 
     @Override
     public void onTestFailedButWithinSuccessPercentage(ITestResult result) {
-        // TODO Auto-generated method stub
-
     }
 
     @Override
     public void onStart(ITestContext context) {
-        // TODO Auto-generated method stub
-
     }
 
     @Override

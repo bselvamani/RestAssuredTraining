@@ -16,9 +16,9 @@ public class User {
     public User() {
     }
 
-    public User(String first_name, String last_name, String gender, String email, String status) {
-        this.firstName = first_name;
-        this.lastName = last_name;
+    public User(String firstName, String lastName, String gender, String email, String status) {
+        this.firstName = firstName;
+        this.lastName = lastName;
         this.gender = gender;
         this.email = email;
         this.status = status;
@@ -73,30 +73,54 @@ public class User {
     }
 
     public String getJSON() {
+        String fullName = (firstName == null ? "" : firstName.trim())
+                + (lastName == null || lastName.trim().isEmpty() ? "" : " " + lastName.trim());
         return new JSONObject()
-                .put("first_name", firstName)
-                .put("last_name", lastName)
+                .put("name", fullName.trim())
                 .put("gender", gender)
                 .put("email", email)
                 .put("status", status)
                 .toString();
     }
 
-    public User get(Map<String, String> hash) {
-        for (Map.Entry<String, String> entry : hash.entrySet()) {
-            if (entry.getKey().equals("id"))
-                id = entry.getValue();
-            else if (entry.getKey().equals("first_name"))
-                firstName = entry.getValue();
-            else if (entry.getKey().equals("last_name"))
-                lastName = entry.getValue();
-            else if (entry.getKey().equals("gender"))
-                gender = entry.getValue();
-            else if (entry.getKey().equals("email"))
-                email = entry.getValue();
-            else if (entry.getKey().equals("status"))
-                status = entry.getValue();
+    public User fromMap(Map<String, ?> hash) {
+        if (hash == null) {
+            return this;
+        }
+        for (Map.Entry<String, ?> entry : hash.entrySet()) {
+            String value = entry.getValue() == null ? null : String.valueOf(entry.getValue());
+            if (entry.getKey().equals("id")) {
+                id = value;
+            } else if (entry.getKey().equals("name")) {
+                applyName(value);
+            } else if (entry.getKey().equals("first_name")) {
+                firstName = value;
+            } else if (entry.getKey().equals("last_name")) {
+                lastName = value;
+            } else if (entry.getKey().equals("gender")) {
+                gender = value;
+            } else if (entry.getKey().equals("email")) {
+                email = value;
+            } else if (entry.getKey().equals("status")) {
+                status = value;
+            }
         }
         return this;
+    }
+
+    private void applyName(String name) {
+        if (name == null || name.trim().isEmpty()) {
+            this.firstName = name;
+            this.lastName = null;
+            return;
+        }
+
+        String[] parts = name.trim().split("\\s+", 2);
+        this.firstName = parts[0];
+        this.lastName = parts.length > 1 ? parts[1] : "";
+    }
+
+    public User get(Map<String, String> hash) {
+        return fromMap(hash);
     }
 }
